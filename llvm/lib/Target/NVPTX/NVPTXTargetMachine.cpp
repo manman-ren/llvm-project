@@ -18,6 +18,7 @@
 #include "NVPTXCtorDtorLowering.h"
 #include "NVPTXLowerAggrCopies.h"
 #include "NVPTXMachineFunctionInfo.h"
+#include "NVPTXSchedStrategy.h"
 #include "NVPTXTargetObjectFile.h"
 #include "NVPTXTargetTransformInfo.h"
 #include "TargetInfo/NVPTXTargetInfo.h"
@@ -62,6 +63,14 @@ static cl::opt<bool> UseShortPointersOpt(
     cl::desc(
         "Use 32-bit pointers for accessing const/local/shared address spaces."),
     cl::init(false), cl::Hidden);
+
+static ScheduleDAGInstrs *createNVPTXMachineScheduler(MachineSchedContext *C) {
+  return new ScheduleDAGMILive(C, std::make_unique<NVPTXSchedStrategy>(C));
+}
+
+static MachineSchedRegistry NVPTXSchedRegistry("nvptx-base",
+                                              "Run NVPTX's custom scheduler",
+                                              createNVPTXMachineScheduler);
 
 namespace llvm {
 
