@@ -21,6 +21,7 @@
 #include "llvm/CodeGen/SelectionDAGTargetInfo.h"
 #include "llvm/CodeGen/TargetSubtargetInfo.h"
 #include "llvm/IR/DataLayout.h"
+#include "llvm/Support/CommandLine.h"
 #include <string>
 
 #define GET_SUBTARGETINFO_HEADER
@@ -58,6 +59,9 @@ public:
   ///
   NVPTXSubtarget(const Triple &TT, const std::string &CPU,
                  const std::string &FS, const NVPTXTargetMachine &TM);
+
+  void overrideSchedPolicy(MachineSchedPolicy &Policy,
+                           unsigned NumRegionInstrs) const override;
 
   const TargetFrameLowering *getFrameLowering() const override {
     return &FrameLowering;
@@ -109,6 +113,7 @@ public:
 
   NVPTXSubtarget &initializeSubtargetDependencies(StringRef CPU, StringRef FS);
   void ParseSubtargetFeatures(StringRef CPU, StringRef TuneCPU, StringRef FS);
+  bool enableMachineScheduler() const override;
 };
 
 } // End llvm namespace

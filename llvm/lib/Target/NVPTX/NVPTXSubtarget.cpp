@@ -12,6 +12,7 @@
 
 #include "NVPTXSubtarget.h"
 #include "NVPTXTargetMachine.h"
+#include "llvm/CodeGen/MachineScheduler.h"
 
 using namespace llvm;
 
@@ -23,11 +24,34 @@ using namespace llvm;
 #include "NVPTXGenSubtargetInfo.inc"
 
 static cl::opt<bool>
+    EnableNVPTXScheduler("enable-nvptx-scheduler",
+                               cl::desc("Enable NVPTX mi scheduler"),
+                               cl::init(false), cl::Hidden);
+
+static cl::opt<bool>
     NoF16Math("nvptx-no-f16-math", cl::Hidden,
               cl::desc("NVPTX Specific: Disable generation of f16 math ops."),
               cl::init(false));
 // Pin the vtable to this file.
 void NVPTXSubtarget::anchor() {}
+
+bool NVPTXSubtarget::enableMachineScheduler() const {
+    return EnableNVPTXScheduler;
+  }
+void NVPTXSubtarget::overrideSchedPolicy(MachineSchedPolicy &Policy,
+                                      unsigned NumRegionInstrs) const {
+  // Track register pressure so the scheduler can try to decrease
+  // pressure once register usage is above the threshold defined by
+  // SIRegisterInfo::getRegPressureSetLimit()
+  Policy.ShouldTrackPressure = true;
+
+  // Enabling both top down and bottom up scheduling seems to give us less
+  // register spills than just using one of these approaches on its own.
+  Policy.OnlyTopDown = false;
+  Policy.OnlyBottomUp = false;
+
+  Policy.ShouldTrackLaneMasks = true;
+}
 
 NVPTXSubtarget &NVPTXSubtarget::initializeSubtargetDependencies(StringRef CPU,
                                                                 StringRef FS) {
